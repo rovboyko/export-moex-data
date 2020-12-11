@@ -23,17 +23,27 @@ public class TradesRequester {
         httpClient = createHttpClient();
     }
 
-    public String requestTrades(int size) {
-        var uriStr = protocol + hostname + endpoint + "?size=" + size + "&limit=10";
+    public String requestTradesWithStart(int start) {
+        var uri = protocol + hostname + endpoint + "?start=" + start;
+        return requestTrades(uri);
+    }
+
+    public String requestTradesWithTradeNo(long tradeNo) {
+        var uri = protocol + hostname + endpoint + "?tradeno=" + tradeNo;
+        System.out.println("uri = " + uri);
+        return requestTrades(uri);
+    }
+
+    private String requestTrades(String uri) {
         try {
             var request = HttpRequest.newBuilder()
-                    .uri(new URI(uriStr))
+                    .uri(new URI(uri))
                     .GET()
                     .timeout(Duration.of(1000, SECONDS))
                     .build();
             return sendRequest(request);
         } catch (URISyntaxException e) {
-            throw new RuntimeException(String.format("Can't parse URI: %s", uriStr), e);
+            throw new RuntimeException(String.format("Can't parse URI: %s", uri), e);
         }
     }
 

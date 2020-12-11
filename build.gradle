@@ -11,6 +11,7 @@ repositories {
 
 dependencies {
     compile 'com.fasterxml.jackson.core:jackson-databind:2.11.1'
+    compile "com.github.housepower:clickhouse-native-jdbc-shaded:2.4.2"
     compileOnly 'org.projectlombok:lombok:1.18.16'
     annotationProcessor 'org.projectlombok:lombok:1.18.16'
 
