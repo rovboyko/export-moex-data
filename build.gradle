@@ -3,7 +3,7 @@ plugins {
 }
 
 group 'org.example'
-version '1.0-SNAPSHOT'
+version '0.0.1'
 
 repositories {
     mavenCentral()
@@ -18,4 +18,13 @@ dependencies {
     testCompileOnly 'org.projectlombok:lombok:1.18.16'
     testAnnotationProcessor 'org.projectlombok:lombok:1.18.16'
     testCompileOnly group: 'junit', name: 'junit', version: '4.12'
+}
+
+task customUberJar(type: Jar) {
+    manifest {
+        attributes 'Main-Class': 'ru.moex.importer.App'
+    }
+    getArchiveBaseName().set(project.name + '-uber-jar')
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
 }

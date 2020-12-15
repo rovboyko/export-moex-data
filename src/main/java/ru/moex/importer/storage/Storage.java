@@ -11,6 +11,8 @@ public interface Storage {
 
     void singleInsertTrades(TradesDataElement tradeElement);
 
+    Integer getTableRowCnt(String table);
+
     Integer getTableRowCntByDate(String table, String dateColumn, LocalDate date);
 
     Long getTableMaxId(String table, String idColumn);

@@ -7,30 +7,70 @@ import ru.moex.importer.storage.ClickHouseStorage;
 import java.time.LocalDate;
 
 public class App {
+    TradesRequester requester = new TradesRequester();
+
     public static void main(String[] args) {
-        var storage = new ClickHouseStorage();
-//        var maxTradeNo = storage.getTableMaxId(ClickHouseStorage.TRADES_TABLE, ClickHouseStorage.ID_COLUMN);
-        var start = storage.getTableRowCntByDate(ClickHouseStorage.TRADES_TABLE,
-                ClickHouseStorage.DATE_COLUMN, LocalDate.parse("2020-12-11"));
+        var app = new App();
+        app.processTradesData();
+    }
 
-//        System.out.println("max tradeno = " + maxTradeNo);
-        System.out.println("max start = " + start);
+    private void processTradesData() {
+        try (var storage = new ClickHouseStorage()) {
+            int totalInserted = 0;
+            int inserted = 0;
+            var prevSession = 3;
+            LocalDate currLoadingDate = null;
+            while (true) {
 
-        var requester = new TradesRequester();
-//        var trades = requester.requestTradesWithTradeNo(maxTradeNo + 1);
-        var trades = requester.requestTradesWithStart(start + 1);
-//        var trades = getTrades();
-//        System.out.println("trades = " + trades.substring(0, Math.min(1000, trades.length())));
-        var parser = new TradesJsonParser(trades);
-        var tradesData = parser.getTradesData();
-//        for (TradesDataElement el : tradesData) {
-//            System.out.println(el);
-//        }
+                // find next non-empty session
+                if (inserted < 300) {
+                    var found = false;
+                    while (!found) {
+                        currLoadingDate = getDateForSession(--prevSession);
+                        totalInserted = 0;
+                        System.out.println("currLoadingDate = " + currLoadingDate
+                                + " prev_session = " + prevSession);
+                        if (!currLoadingDate.equals(LocalDate.MIN)) {
+                            found = true;
+                        }
+                        if (prevSession < 0) {
+                            return;
+                        }
+                    }
+                }
 
-        storage.batchInsertTrades(tradesData);
-        System.out.println("Current rows count = " +
-                storage.getTableRowCntByDate(ClickHouseStorage.TRADES_TABLE,
-                        ClickHouseStorage.DATE_COLUMN, LocalDate.parse("2020-12-11")));
+                Util.checkArgument(currLoadingDate.equals(LocalDate.MIN), "Illegal value for currLoadingDate");
+
+//                var start = storage.getTableRowCntByDate(ClickHouseStorage.TRADES_TABLE,
+//                        ClickHouseStorage.DATE_COLUMN, currLoadingDate);
+                var start = totalInserted;
+                System.out.println("currLoadingDate = " + currLoadingDate
+                        + " prev_session = " + prevSession
+                        + " max start = " + start);
+
+                var trades = requester.requestTradesWithSessAndStart(prevSession, start);
+                var tradesData = new TradesJsonParser(trades).getTradesData();
+
+                storage.batchInsertTrades(tradesData);
+                inserted = tradesData.size();
+                System.out.println("Current inserted value = " + inserted);
+                totalInserted += inserted;
+                var cnt = storage.getTableRowCnt(ClickHouseStorage.TRADES_TABLE);
+                System.out.println("Current rows count = " + cnt);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private LocalDate getDateForSession(int prevSession) {
+        var trades = requester.requestTradesWithSessAndLimit(prevSession, 1);
+        var tradesData = new TradesJsonParser(trades).getTradesData();
+        if (tradesData.size() > 0) {
+            return tradesData.get(0).getTradeDate();
+        } else {
+            return LocalDate.MIN;
+        }
     }
 
     private static String getTrades() {

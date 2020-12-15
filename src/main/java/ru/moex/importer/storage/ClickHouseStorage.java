@@ -34,7 +34,6 @@ public class ClickHouseStorage implements Storage, AutoCloseable {
                 addTradesElementToStatement(pstmt, element);
             }
             pstmt.executeBatch();
-            System.out.println("inserted " + tradesData.size() + " rows");
         } catch (SQLException e) {
             throw new RuntimeException("Can't finish batch insert to trades table", e);
         }
@@ -71,6 +70,16 @@ public class ClickHouseStorage implements Storage, AutoCloseable {
     @Override
     public Integer getTableRowCntByDate(String table, String dateColumn, LocalDate date) {
         String sql = String.format("select count(*) from %s where %s = '%s'", table, dateColumn, date);
+        return getSingleIntFromSql(sql);
+    }
+
+    @Override
+    public Integer getTableRowCnt(String table) {
+        String sql = String.format("select count(*) from %s", table);
+        return getSingleIntFromSql(sql);
+    }
+
+    private Integer getSingleIntFromSql(String sql) {
         try {
             var rs = stmt.executeQuery(sql);
             if (rs.next())
