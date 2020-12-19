@@ -12,6 +12,7 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class TradesJsonParser {
 
@@ -39,6 +40,16 @@ public class TradesJsonParser {
             tradesData.add(deserializeDataElement(elements.next()));
         }
         return tradesData;
+    }
+
+    public Optional<TradesDataElement> getFirstTradesElement() {
+        var jsonTradesData = (ArrayNode) rootNode.get("trades").get("data");
+        var elements = jsonTradesData.elements();
+        if (elements.hasNext()) {
+            return Optional.of(deserializeDataElement(elements.next()));
+        } else {
+            return Optional.empty();
+        }
     }
 
     private TradesDataElement deserializeDataElement(JsonNode jsonNode) {

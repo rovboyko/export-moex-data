@@ -23,13 +23,8 @@ public class TradesRequester {
         httpClient = createHttpClient();
     }
 
-    public String requestTradesWithSessAndStart(int prevSession, int start) {
-        var uri = protocol + hostname + endpoint + "?previous_session=" + prevSession + "&start=" + start;
-        return requestTrades(uri);
-    }
-
-    public String requestTradesWithSessAndLimit(int prevSession, int limit) {
-        var uri = protocol + hostname + endpoint + "?previous_session=" + prevSession + "&limit=" + limit;
+    public String requestTradesWithSess(int prevSession, int start, int limit) {
+        var uri = protocol + hostname + endpoint + "?previous_session=" + prevSession + "&start=" + start + "&limit=" + limit;
         return requestTrades(uri);
     }
 

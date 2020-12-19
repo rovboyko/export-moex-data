@@ -1,5 +1,6 @@
 package ru.moex.importer.storage;
 
+import ru.moex.importer.AppConfig;
 import ru.moex.importer.data.TradesDataElement;
 
 import java.math.BigDecimal;
@@ -10,20 +11,30 @@ import java.util.List;
 
 public class ClickHouseStorage implements Storage, AutoCloseable {
 
-    public static final String URL = "jdbc:clickhouse://127.0.0.1:9000";
+//    public static final String URL = "jdbc:clickhouse://127.0.0.1:9000?user=default&password=assa123";
+    public static final String URL = "jdbc:clickhouse";
     public static final String TRADES_TABLE = "trades";
     public static final String DATE_COLUMN = "TRADEDATE";
     public static final String ID_COLUMN = "TRADENO";
 
+//    private final AppConfig appConfig;
+    private final String connStr;
     private final Connection connection;
     private final Statement stmt;
 
-    public ClickHouseStorage() {
+    public ClickHouseStorage(AppConfig appConfig) {
+//        this.appConfig = appConfig;
+        connStr = String.format("%s://%s:%s?user=%s&password=%s",
+                URL,
+                appConfig.getDbHost(),
+                appConfig.getDbPort(),
+                appConfig.getDbUser(),
+                appConfig.getDbPass());
         try {
-            connection = DriverManager.getConnection(URL);
+            connection = DriverManager.getConnection(connStr);
             stmt = connection.createStatement();
         } catch (SQLException e) {
-            throw new RuntimeException("Can't connect to " + URL, e);
+            throw new RuntimeException("Can't connect to " + connStr, e);
         }
     }
 
@@ -68,8 +79,8 @@ public class ClickHouseStorage implements Storage, AutoCloseable {
     }
 
     @Override
-    public Integer getTableRowCntByDate(String table, String dateColumn, LocalDate date) {
-        String sql = String.format("select count(*) from %s where %s = '%s'", table, dateColumn, date);
+    public Integer getTableRowCntByCondition(String table, String column, String expr) {
+        String sql = String.format("select count(*) from %s where %s = '%s'", table, column, expr);
         return getSingleIntFromSql(sql);
     }
 

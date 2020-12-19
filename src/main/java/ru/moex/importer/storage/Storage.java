@@ -13,7 +13,7 @@ public interface Storage {
 
     Integer getTableRowCnt(String table);
 
-    Integer getTableRowCntByDate(String table, String dateColumn, LocalDate date);
+    Integer getTableRowCntByCondition(String table, String column, String expr);
 
     Long getTableMaxId(String table, String idColumn);
 
