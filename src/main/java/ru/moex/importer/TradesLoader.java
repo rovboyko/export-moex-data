@@ -8,17 +8,17 @@ import ru.moex.importer.storage.Storage;
 
 import java.time.LocalDate;
 
-public class App {
+import static ru.moex.importer.Util.checkCondition;
+
+public class TradesLoader {
     public static final int BATCH_SIZE = 5000;
 
     TradesRequester requester = new TradesRequester();
 
     public static void main(String[] args) {
-        var app = new App();
-        var propFilename = AppConfig.getPropFileName(args).orElse(AppConfig.PROP_FILE);
-        var appConfig = AppConfig.createFromFile(propFilename);
-        appConfig.addPropertiesFromArgs(args);
-        app.processTradesData(appConfig);
+        var tradesLoader = new TradesLoader();
+        var appConfig = AppConfig.createFromArgs(args);
+        tradesLoader.processTradesData(appConfig);
     }
 
     private void processTradesData(AppConfig config) {
@@ -59,7 +59,7 @@ public class App {
                     skipped = 0;
                 }
 
-                Util.checkArgument(currLoadingDate.equals(LocalDate.MIN), "Illegal value for currLoadingDate");
+                checkCondition(currLoadingDate.equals(LocalDate.MIN), "Illegal value for currLoadingDate");
 
                 System.out.println("currLoadingDate = " + currLoadingDate
                         + " prev_session = " + prevSession

@@ -23,21 +23,33 @@ public class AppConfig {
     public static String MOEX_TRADES_ENDPOINT = "moex.trades.endpoint";
     public static String MOEX_CANDLES_ENDPOINT = "moex.candles.endpoint";
 
+    //Data properties
+    public static String SEC_ID = "sec.id";
+    public static String FROM_DATE = "from.date";
+
     public Set<String> argProperties = Stream.of(
             "--"+DB_HOST, "--"+DB_PORT, "--"+DB_USER, "--"+DB_PASS,
             "--"+MOEX_PROTO, "--"+MOEX_HOST,
-            "--"+MOEX_TRADES_ENDPOINT, "--"+MOEX_CANDLES_ENDPOINT
+            "--"+MOEX_TRADES_ENDPOINT, "--"+MOEX_CANDLES_ENDPOINT,
+            "--"+ SEC_ID, "--"+FROM_DATE
             )
             .collect(Collectors.toCollection(HashSet::new));
 
     Properties properties = new Properties();
+
+    public static AppConfig createFromArgs(String[] args) {
+        var propFilename = getPropFileName(args).orElse(AppConfig.PROP_FILE);
+        var appConfig = createFromFile(propFilename);
+        appConfig.addPropertiesFromArgs(args);
+        return appConfig;
+    }
 
     /**
      * Tries to find properties file in classpath and upload all props from it
      * @param filename - custom file name. Can't be null
      */
     public static AppConfig createFromFile(String filename) {
-        try (InputStream input = App.class.getClassLoader().getResourceAsStream(filename)) {
+        try (InputStream input = TradesLoader.class.getClassLoader().getResourceAsStream(filename)) {
 
             AppConfig appConfig = new AppConfig();
 
@@ -57,7 +69,7 @@ public class AppConfig {
 
     /**
      * Tries to parse args and add its to properties
-     * @param args
+     * @param args - args to be added
      */
     public void addPropertiesFromArgs(String[] args) {
         for (int i = 0; i < args.length; i++) {
@@ -94,6 +106,10 @@ public class AppConfig {
 
     public String getDbPass() {
         return properties.getProperty(DB_PASS);
+    }
+
+    public String get(String propName) {
+        return properties.getProperty(propName);
     }
 
 }

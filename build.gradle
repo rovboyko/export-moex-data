@@ -2,8 +2,8 @@ plugins {
     id 'java'
 }
 
-group 'org.example'
-version '0.0.1'
+group 'ru.moex.importer'
+version '0.0.2'
 
 repositories {
     mavenCentral()
@@ -22,7 +22,7 @@ dependencies {
 
 task customUberJar(type: Jar) {
     manifest {
-        attributes 'Main-Class': 'ru.moex.importer.App'
+        attributes 'Main-Class': 'ru.moex.importer.TradesLoader'
     }
     getArchiveBaseName().set(project.name + '-uber-jar')
     from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
