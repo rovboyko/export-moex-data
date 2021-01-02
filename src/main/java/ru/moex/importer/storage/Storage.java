@@ -1,20 +1,19 @@
 package ru.moex.importer.storage;
 
-import ru.moex.importer.data.TradesDataElement;
+import ru.moex.importer.data.DataElement;
 
-import java.time.LocalDate;
 import java.util.List;
 
-public interface Storage {
+public interface Storage<T extends DataElement> {
 
-    void batchInsertTrades(List<TradesDataElement> tradesData);
+    void batchInsertElements(List<T> elements);
 
-    void singleInsertTrades(TradesDataElement tradeElement);
+    void insertSingleElement(T element);
 
-    Integer getTableRowCnt(String table);
+    Integer getTableRowCnt();
 
-    Integer getTableRowCntByCondition(String table, String column, String expr);
+    Integer getTableRowCntByCondition(String column, String expr);
 
-    Long getTableMaxId(String table, String idColumn);
+    Long getTableMaxId();
 
 }

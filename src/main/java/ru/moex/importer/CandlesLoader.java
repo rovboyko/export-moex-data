@@ -1,28 +1,32 @@
 package ru.moex.importer;
 
+import ru.moex.importer.data.CandlesDataElement;
 import ru.moex.importer.http.CandlesRequester;
-import ru.moex.importer.storage.ClickHouseStorage;
+import ru.moex.importer.parser.CandlesJsonParser;
 import ru.moex.importer.storage.Storage;
+import ru.moex.importer.storage.clickhouse.CandlesClickHouseStorage;
 
 import java.time.LocalDate;
 
-import static ru.moex.importer.AppConfig.SEC_ID;
-import static ru.moex.importer.AppConfig.FROM_DATE;
+import static ru.moex.importer.AppConfig.*;
+import static ru.moex.importer.Util.checkAllNotNull;
 import static ru.moex.importer.Util.checkNotNull;
 
 public class CandlesLoader {
-    public static final int BATCH_SIZE = 5000;
 
     CandlesRequester requester = new CandlesRequester();
-    private final AppConfig appConfig;
     private final String secId;
-    private final LocalDate from;
+    private final LocalDate fromDate;
+    private final LocalDate tillDate;
 
     public CandlesLoader(AppConfig appConfig) {
-        this.appConfig = checkNotNull(appConfig, "properties must be declared");
-        this.secId = checkNotNull(appConfig.get(SEC_ID), SEC_ID + " must be specified");
-        var fromStr = checkNotNull(appConfig.get(FROM_DATE), FROM_DATE + " must be specified");
-        this.from = LocalDate.parse(fromStr);
+        checkNotNull(appConfig, "properties must be declared");
+        this.secId = checkNotNull(appConfig.get(SEC_ID), SEC_ID + " must be specified").toUpperCase();
+        var fromStr = appConfig.get(FROM_DATE);
+        var tillStr = appConfig.get(TILL_DATE);
+        checkAllNotNull(String.format("%s and %s must be specified", fromStr, tillStr));
+        this.fromDate = LocalDate.parse(fromStr);
+        this.tillDate = LocalDate.parse(tillStr);
     }
 
     public static void main(String[] args) {
@@ -33,25 +37,22 @@ public class CandlesLoader {
     }
 
     private void processCandlesData(AppConfig config) {
-        try (var storage = new ClickHouseStorage(config)) {
-
-            System.out.println("from = " + from
-                    + " secId = " + secId);
-
-            var candles = requester.requestCandlesForSecIdAndFrom(secId, from);
-
-            System.out.println("candles = " + candles);
-
-//            var tradesData = new TradesJsonParser(trades).getTradesData();
-//
-//            storage.batchInsertTrades(tradesData);
-//            inserted = tradesData.size();
-//            System.out.println("Current inserted value = " + inserted);
-//            totalSessionRows += inserted;
-//            var cnt = storage.getTableRowCnt(ClickHouseStorage.TRADES_TABLE);
-//            System.out.println("Current table rows count = " + cnt);
+        try (var storage = new CandlesClickHouseStorage(config)) {
+            fromDate.datesUntil(tillDate)
+                    .forEach(date -> processOneDate(storage, date));
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private void processOneDate(Storage<CandlesDataElement> storage, LocalDate date) {
+        System.out.println("date = " + date + " secId = " + secId);
+
+        var candles = requester.requestCandlesForSecId(secId, date);
+//        System.out.println("candles = " + candles);
+
+        var candlesData = new CandlesJsonParser(candles, secId).getDataElements();
+        storage.batchInsertElements(candlesData);
+        System.out.println(String.format("inserted %s rows", candlesData.size()));
     }
 }

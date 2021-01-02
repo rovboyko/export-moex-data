@@ -1,8 +1,6 @@
 package ru.moex.importer.parser;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import ru.moex.importer.data.TradesDataElement;
 
@@ -10,49 +8,20 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
 
-public class TradesJsonParser {
-
-    private static final DateTimeFormatter dtFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-    private static final DateTimeFormatter dFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-    private static final DateTimeFormatter tFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
-
-    private final ObjectMapper mapper = new ObjectMapper();
-    private final JsonNode rootNode;
+public class TradesJsonParser extends AbstractJsonParser<TradesDataElement> {
 
     public TradesJsonParser(String json) {
-        try {
-            rootNode = mapper.readTree(json);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(String.format("can't parse json: %s", json));
-        }
+       super(json);
     }
 
-    public List<TradesDataElement> getTradesData() {
-        var jsonTradesData = (ArrayNode) rootNode.get("trades").get("data");
-        var tradesData = new ArrayList<TradesDataElement>();
-
-        var elements = jsonTradesData.elements();
-        while(elements.hasNext()) {
-            tradesData.add(deserializeDataElement(elements.next()));
-        }
-        return tradesData;
+    @Override
+    JsonNode getJsonData() {
+        return rootNode.get("trades").get("data");
     }
 
-    public Optional<TradesDataElement> getFirstTradesElement() {
-        var jsonTradesData = (ArrayNode) rootNode.get("trades").get("data");
-        var elements = jsonTradesData.elements();
-        if (elements.hasNext()) {
-            return Optional.of(deserializeDataElement(elements.next()));
-        } else {
-            return Optional.empty();
-        }
-    }
-
-    private TradesDataElement deserializeDataElement(JsonNode jsonNode) {
+    @Override
+    TradesDataElement deserializeDataElement(JsonNode jsonNode) {
         if (!(jsonNode instanceof ArrayNode)) {
             throw new RuntimeException(String.format("can't convert trades element: %s", jsonNode));
         }

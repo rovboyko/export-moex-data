@@ -3,13 +3,11 @@ package ru.moex.importer.data;
 import lombok.Builder;
 import lombok.Data;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 
 @Data
 @Builder
-public class CandlesDataElement {
+public class CandlesDataElement implements DataElement {
 
     private String secId;
     private Double open;

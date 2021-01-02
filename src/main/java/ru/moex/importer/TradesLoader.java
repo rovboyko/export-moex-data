@@ -3,8 +3,8 @@ package ru.moex.importer;
 import ru.moex.importer.data.TradesDataElement;
 import ru.moex.importer.http.TradesRequester;
 import ru.moex.importer.parser.TradesJsonParser;
-import ru.moex.importer.storage.ClickHouseStorage;
 import ru.moex.importer.storage.Storage;
+import ru.moex.importer.storage.clickhouse.TradesClickHouseStorage;
 
 import java.time.LocalDate;
 
@@ -22,7 +22,7 @@ public class TradesLoader {
     }
 
     private void processTradesData(AppConfig config) {
-        try (var storage = new ClickHouseStorage(config)) {
+        try (var storage = new TradesClickHouseStorage(config)) {
             int totalSessionRows = 0;
             int inserted = 0;
             int skipped = 0;
@@ -66,13 +66,13 @@ public class TradesLoader {
                         + " max start = " + totalSessionRows);
 
                 var trades = requester.requestTradesWithSess(prevSession, totalSessionRows, BATCH_SIZE);
-                var tradesData = new TradesJsonParser(trades).getTradesData();
+                var tradesData = new TradesJsonParser(trades).getDataElements();
 
-                storage.batchInsertTrades(tradesData);
+                storage.batchInsertElements(tradesData);
                 inserted = tradesData.size();
                 System.out.println("Current inserted value = " + inserted);
                 totalSessionRows += inserted;
-                var cnt = storage.getTableRowCnt(ClickHouseStorage.TRADES_TABLE);
+                var cnt = storage.getTableRowCnt();
                 System.out.println("Current table rows count = " + cnt);
             }
         } catch (Exception e) {
@@ -82,7 +82,7 @@ public class TradesLoader {
 
     private LocalDate getDateForSession(int prevSession) {
         var trades = requester.requestTradesWithSess(prevSession, 0, 1);
-        var tradesData = new TradesJsonParser(trades).getTradesData();
+        var tradesData = new TradesJsonParser(trades).getDataElements();
         if (tradesData.size() > 0) {
             return tradesData.get(0).getTradeDate();
         } else {
@@ -90,14 +90,13 @@ public class TradesLoader {
         }
     }
 
-    private boolean isAlreadyUploaded(Storage storage, int prevSession, int start) {
+    private boolean isAlreadyUploaded(Storage<TradesDataElement> storage, int prevSession, int start) {
         var trades = requester.requestTradesWithSess(prevSession, start, 1);
-        var optFirstElement = new TradesJsonParser(trades).getFirstTradesElement();
+        var optFirstElement = new TradesJsonParser(trades).getFirstDataElement();
         var tradeNo = optFirstElement.orElse(TradesDataElement.builder().tradeNo(1L).build()).getTradeNo();
 
         return storage.getTableRowCntByCondition(
-                ClickHouseStorage.TRADES_TABLE,
-                ClickHouseStorage.ID_COLUMN,
+                TradesClickHouseStorage.TRADES_ID_COLUMN,
                 String.valueOf(tradeNo)) > 0;
     }
 }

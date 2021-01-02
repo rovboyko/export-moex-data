@@ -9,7 +9,7 @@ import java.time.LocalTime;
 
 @Data
 @Builder
-public class TradesDataElement {
+public class TradesDataElement implements DataElement  {
 
     private Long tradeNo;
     private String boardName;

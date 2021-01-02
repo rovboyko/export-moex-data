@@ -26,12 +26,13 @@ public class AppConfig {
     //Data properties
     public static String SEC_ID = "sec.id";
     public static String FROM_DATE = "from.date";
+    public static String TILL_DATE = "till.date";
 
     public Set<String> argProperties = Stream.of(
             "--"+DB_HOST, "--"+DB_PORT, "--"+DB_USER, "--"+DB_PASS,
             "--"+MOEX_PROTO, "--"+MOEX_HOST,
             "--"+MOEX_TRADES_ENDPOINT, "--"+MOEX_CANDLES_ENDPOINT,
-            "--"+ SEC_ID, "--"+FROM_DATE
+            "--"+ SEC_ID, "--"+FROM_DATE, "--"+TILL_DATE
             )
             .collect(Collectors.toCollection(HashSet::new));
 
