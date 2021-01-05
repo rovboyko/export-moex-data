@@ -1,5 +1,7 @@
 package ru.moex.importer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ru.moex.importer.data.CandlesDataElement;
 import ru.moex.importer.http.CandlesRequester;
 import ru.moex.importer.parser.CandlesJsonParser;
@@ -7,12 +9,15 @@ import ru.moex.importer.storage.Storage;
 import ru.moex.importer.storage.clickhouse.CandlesClickHouseStorage;
 
 import java.time.LocalDate;
+import java.util.concurrent.*;
 
 import static ru.moex.importer.AppConfig.*;
 import static ru.moex.importer.Util.checkAllNotNull;
 import static ru.moex.importer.Util.checkNotNull;
 
 public class CandlesLoader {
+
+    private static Logger log = LoggerFactory.getLogger(CandlesLoader.class.getName());
 
     CandlesRequester requester = new CandlesRequester();
     private final String secId;
@@ -37,22 +42,25 @@ public class CandlesLoader {
     }
 
     private void processCandlesData(AppConfig config) {
+        final ExecutorService executor = Executors.newFixedThreadPool(4);
         try (var storage = new CandlesClickHouseStorage(config)) {
-            fromDate.datesUntil(tillDate)
-                    .forEach(date -> processOneDate(storage, date));
+            executor.submit(() ->
+                fromDate.datesUntil(tillDate)
+                    .parallel()
+                    .forEach(date -> processOneDate(storage, date))
+            ).get();
         } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            executor.shutdown();
         }
     }
 
     private void processOneDate(Storage<CandlesDataElement> storage, LocalDate date) {
-        System.out.println("date = " + date + " secId = " + secId);
-
         var candles = requester.requestCandlesForSecId(secId, date);
-//        System.out.println("candles = " + candles);
-
         var candlesData = new CandlesJsonParser(candles, secId).getDataElements();
         storage.batchInsertElements(candlesData);
-        System.out.println(String.format("inserted %s rows", candlesData.size()));
+        log.info(String.format("inserted %s rows for date = %s and secId = %s",
+                candlesData.size(), date, secId));
     }
 }

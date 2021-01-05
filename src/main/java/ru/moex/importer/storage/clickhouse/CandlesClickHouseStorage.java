@@ -4,6 +4,7 @@ import ru.moex.importer.AppConfig;
 import ru.moex.importer.data.CandlesDataElement;
 
 import java.math.BigDecimal;
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
@@ -16,7 +17,7 @@ public class CandlesClickHouseStorage extends AbstractClickHouseStorage<CandlesD
     }
 
     @Override
-    PreparedStatement createTradesPrepareStatement() throws SQLException {
+    PreparedStatement createPrepareStatement(Connection connection) throws SQLException {
         return connection.prepareStatement("INSERT INTO " + CANDLES_TABLE +
                 " VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)");
     }

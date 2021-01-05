@@ -35,8 +35,4 @@ public class Util {
             return elements;
         }
     }
-
-    public static String enrichEndpoint(String endpoint, String parameter) {
-        return String.format(endpoint, parameter);
-    }
 }
