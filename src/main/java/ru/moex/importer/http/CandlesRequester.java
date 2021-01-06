@@ -3,8 +3,6 @@ package ru.moex.importer.http;
 
 import java.time.LocalDate;
 
-import static ru.moex.importer.Util.enrichEndpoint;
-
 public class CandlesRequester extends AbstractRequester {
 
     private final String candlesEndpoint = "/securities/%s/candles.json";
@@ -18,10 +16,10 @@ public class CandlesRequester extends AbstractRequester {
 
     public String requestCandlesForSecId(String secId, LocalDate fromDate, LocalDate tillDate) {
         var uri = protocol + hostname + baseEndpoint +
-                enrichEndpoint(candlesEndpoint, secId) +
-                "?" + enrichEndpoint(intervalParameter, "10") +
-                "&" + enrichEndpoint(fromParameter, fromDate.toString()) +
-                "&" + enrichEndpoint(tillParameter, tillDate.toString());
+                String.format(candlesEndpoint, secId) +
+                "?" + String.format(intervalParameter, "10") +
+                "&" + String.format(fromParameter, fromDate.toString()) +
+                "&" + String.format(tillParameter, tillDate.toString());
 
         return requestData(uri);
     }

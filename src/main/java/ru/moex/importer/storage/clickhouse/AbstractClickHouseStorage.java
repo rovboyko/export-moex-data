@@ -2,6 +2,7 @@ package ru.moex.importer.storage.clickhouse;
 
 import ru.moex.importer.AppConfig;
 import ru.moex.importer.data.DataElement;
+import ru.moex.importer.storage.HikariConnectionPool;
 import ru.moex.importer.storage.Storage;
 
 import java.sql.*;
@@ -11,49 +12,43 @@ public abstract class AbstractClickHouseStorage<T extends DataElement> implement
 
     public static final String URL = "jdbc:clickhouse";
 
-    final Connection connection;
-    final Statement stmt;
+    final HikariConnectionPool pool;
 
     public AbstractClickHouseStorage(AppConfig appConfig) {
-        String connStr = String.format("%s://%s:%s?user=%s&password=%s",
+        String connStr = String.format("%s://%s:%s",
                 URL,
                 appConfig.getDbHost(),
-                appConfig.getDbPort(),
-                appConfig.getDbUser(),
-                appConfig.getDbPass());
-        try {
-            connection = DriverManager.getConnection(connStr);
-            stmt = connection.createStatement();
-        } catch (SQLException e) {
-            throw new RuntimeException("Can't connect to " + connStr, e);
-        }
+                appConfig.getDbPort());
+        pool = HikariConnectionPool.from(connStr, appConfig.getDbUser(), appConfig.getDbPass());
     }
 
     @Override
     public void batchInsertElements(List<T> elements) {
-        try (PreparedStatement pstmt = createTradesPrepareStatement()) {
+        try (Connection conn = pool.getConnection();
+                PreparedStatement pstmt = createPrepareStatement(conn)) {
             for (T element : elements) {
                 addElementToStatement(pstmt, element);
             }
             pstmt.executeBatch();
         } catch (SQLException e) {
-            throw new RuntimeException("Can't finish batch insert to trades table", e);
+            throw new RuntimeException("Can't finish batch insert to table", e);
         }
     }
 
     @Override
     public void insertSingleElement(T element) {
-        try (PreparedStatement pstmt = createTradesPrepareStatement()) {
+        try (Connection conn = pool.getConnection();
+                PreparedStatement pstmt = createPrepareStatement(conn)) {
             addElementToStatement(pstmt, element);
             pstmt.executeBatch();
         } catch (SQLException e) {
-            throw new RuntimeException("Can't finish single insert to trades table", e);
+            throw new RuntimeException("Can't finish single insert to table", e);
         }
     }
 
     abstract void addElementToStatement(PreparedStatement pstmt, T element) throws SQLException;
 
-    abstract PreparedStatement createTradesPrepareStatement() throws SQLException;
+    abstract PreparedStatement createPrepareStatement(Connection connection) throws SQLException;
 
     public abstract String getTable();
 
@@ -72,7 +67,8 @@ public abstract class AbstractClickHouseStorage<T extends DataElement> implement
     }
 
     private Integer getSingleIntFromSql(String sql) {
-        try {
+        try (var conn = pool.getConnection();
+                var stmt = conn.createStatement()) {
             var rs = stmt.executeQuery(sql);
             if (rs.next())
                 return rs.getInt(1);
@@ -86,7 +82,8 @@ public abstract class AbstractClickHouseStorage<T extends DataElement> implement
     @Override
     public Long getTableMaxId() {
         String sql = String.format("select max(%s) from %s", getIdColumn(), getTable());
-        try {
+        try (var conn = pool.getConnection();
+             var stmt = conn.createStatement()) {
             var rs = stmt.executeQuery(sql);
             if (rs.next())
                 return rs.getLong(1);
@@ -98,8 +95,7 @@ public abstract class AbstractClickHouseStorage<T extends DataElement> implement
     }
 
     @Override
-    public void close() throws Exception {
-        stmt.close();
-        connection.close();
+    public void close() {
+        pool.close();
     }
 }

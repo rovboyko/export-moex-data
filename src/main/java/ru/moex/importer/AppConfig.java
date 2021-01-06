@@ -1,5 +1,8 @@
 package ru.moex.importer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
@@ -7,6 +10,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class AppConfig {
+
+    private static Logger log = LoggerFactory.getLogger(AppConfig.class.getName());
 
     //General properties
     public static String PROP_FILE = "config.properties";
@@ -55,7 +60,7 @@ public class AppConfig {
             AppConfig appConfig = new AppConfig();
 
             if (input == null) {
-                System.out.println("Sorry, unable to find " + filename);
+                log.warn("Sorry, unable to find " + filename);
                 return appConfig;
             }
 
@@ -74,12 +79,12 @@ public class AppConfig {
      */
     public void addPropertiesFromArgs(String[] args) {
         for (int i = 0; i < args.length; i++) {
-            System.out.println("arg = " + args[i]);
+            log.info("arg = " + args[i]);
             if (argProperties.contains(args[i])) {
                 properties.put(args[i].replaceFirst("--", ""), args[++i]);
-                System.out.println("arg = " + args[i]);
+                log.info("arg = " + args[i]);
             } else {
-                System.out.println("Unknown property: " + args[i]);
+                log.info("Unknown property: " + args[i]);
             }
         }
     }

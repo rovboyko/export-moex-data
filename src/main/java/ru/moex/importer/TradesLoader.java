@@ -1,5 +1,7 @@
 package ru.moex.importer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ru.moex.importer.data.TradesDataElement;
 import ru.moex.importer.http.TradesRequester;
 import ru.moex.importer.parser.TradesJsonParser;
@@ -12,6 +14,8 @@ import static ru.moex.importer.Util.checkCondition;
 
 public class TradesLoader {
     public static final int BATCH_SIZE = 5000;
+
+    private static Logger log = LoggerFactory.getLogger(TradesLoader.class.getName());
 
     TradesRequester requester = new TradesRequester();
 
@@ -39,7 +43,7 @@ public class TradesLoader {
                         }
                         currLoadingDate = getDateForSession(prevSession);
                         totalSessionRows = 0;
-                        System.out.println("currLoadingDate = " + currLoadingDate
+                        log.info("currLoadingDate = " + currLoadingDate
                                 + " prev_session = " + prevSession);
                         if (!currLoadingDate.equals(LocalDate.MIN)) {
                             found = true;
@@ -47,13 +51,13 @@ public class TradesLoader {
                     }
                 }
 
-                System.out.println("Total session rows: " + totalSessionRows);
+                log.info("Total session rows: " + totalSessionRows);
 
                 // checking if we've already processed this data set
                 if (isAlreadyUploaded(storage, prevSession, totalSessionRows+BATCH_SIZE)) {
                     skipped = BATCH_SIZE;
                     totalSessionRows += skipped;
-                    System.out.println("skipped " + skipped + " rows");
+                    log.info("skipped " + skipped + " rows");
                     continue;
                 } else {
                     skipped = 0;
@@ -61,7 +65,7 @@ public class TradesLoader {
 
                 checkCondition(currLoadingDate.equals(LocalDate.MIN), "Illegal value for currLoadingDate");
 
-                System.out.println("currLoadingDate = " + currLoadingDate
+                log.info("currLoadingDate = " + currLoadingDate
                         + " prev_session = " + prevSession
                         + " max start = " + totalSessionRows);
 
@@ -70,10 +74,10 @@ public class TradesLoader {
 
                 storage.batchInsertElements(tradesData);
                 inserted = tradesData.size();
-                System.out.println("Current inserted value = " + inserted);
+                log.info("Current inserted value = " + inserted);
                 totalSessionRows += inserted;
                 var cnt = storage.getTableRowCnt();
-                System.out.println("Current table rows count = " + cnt);
+                log.info("Current table rows count = " + cnt);
             }
         } catch (Exception e) {
             e.printStackTrace();

@@ -4,6 +4,7 @@ import ru.moex.importer.AppConfig;
 import ru.moex.importer.data.TradesDataElement;
 
 import java.math.BigDecimal;
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
@@ -18,7 +19,7 @@ public class TradesClickHouseStorage extends AbstractClickHouseStorage<TradesDat
     }
 
     @Override
-    PreparedStatement createTradesPrepareStatement() throws SQLException {
+    PreparedStatement createPrepareStatement(Connection connection) throws SQLException {
         return connection.prepareStatement("INSERT INTO " + TRADES_TABLE +
                 " VALUES(?, ?, ?, ?, ?, ?, ?, ?)");
     }

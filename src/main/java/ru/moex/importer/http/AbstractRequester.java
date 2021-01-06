@@ -28,7 +28,7 @@ public abstract class AbstractRequester {
             var request = HttpRequest.newBuilder()
                     .uri(new URI(uri))
                     .GET()
-                    .timeout(Duration.of(1000, SECONDS))
+                    .timeout(Duration.of(10, SECONDS))
                     .build();
             return sendRequest(request);
         } catch (URISyntaxException e) {
