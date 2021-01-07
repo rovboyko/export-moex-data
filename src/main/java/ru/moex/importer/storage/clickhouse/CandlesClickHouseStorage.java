@@ -2,18 +2,23 @@ package ru.moex.importer.storage.clickhouse;
 
 import ru.moex.importer.AppConfig;
 import ru.moex.importer.data.CandlesDataElement;
+import ru.moex.importer.data.CandlesInterval;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
+import static ru.moex.importer.AppConfig.CANDLES_INTERVAL;
+
 public class CandlesClickHouseStorage extends AbstractClickHouseStorage<CandlesDataElement> {
 
-    public static final String CANDLES_TABLE = "candles";
+    public static final String BASE_CANDLES_TABLE = "candles";
+    public final String CANDLES_TABLE;
 
     public CandlesClickHouseStorage(AppConfig appConfig) {
         super(appConfig);
+        CANDLES_TABLE = getCandlesTableName(appConfig.get(CANDLES_INTERVAL));
     }
 
     @Override
@@ -45,4 +50,17 @@ public class CandlesClickHouseStorage extends AbstractClickHouseStorage<CandlesD
         pstmt.setTimestamp(9, java.sql.Timestamp.valueOf(element.getEnd()));
         pstmt.addBatch();
     }
+
+    private String getCandlesTableName(String strInterval) {
+        if (CandlesInterval.ONE_MINUTE.equalzz(strInterval)) {
+            return BASE_CANDLES_TABLE + "_" + CandlesInterval.ONE_MINUTE.getValue();
+        } else if (CandlesInterval.TEN_MINUTES.equalzz(strInterval)) {
+            return BASE_CANDLES_TABLE + "_" + CandlesInterval.TEN_MINUTES.getValue();
+        } else if (CandlesInterval.ONE_DAY.equalzz(strInterval)) {
+            return BASE_CANDLES_TABLE + "_" + CandlesInterval.ONE_DAY.getValue();
+        } else {
+            return BASE_CANDLES_TABLE;
+        }
+    }
+
 }

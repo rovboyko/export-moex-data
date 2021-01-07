@@ -25,9 +25,9 @@ dependencies {
 }
 
 task customUberJar(type: Jar) {
-    manifest {
-        attributes 'Main-Class': 'ru.moex.importer.TradesLoader'
-    }
+//    manifest {
+//        attributes 'Main-Class': 'ru.moex.importer.TradesLoader'
+//    }
     getArchiveBaseName().set(project.name + '-uber-jar')
     from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
     with jar
