@@ -15,7 +15,7 @@ import static ru.moex.importer.Util.checkCondition;
 public class TradesLoader {
     public static final int BATCH_SIZE = 5000;
 
-    private static Logger log = LoggerFactory.getLogger(TradesLoader.class.getName());
+    private static final Logger log = LoggerFactory.getLogger(TradesLoader.class.getName());
 
     TradesRequester requester = new TradesRequester();
 

@@ -13,6 +13,7 @@ import static java.time.temporal.ChronoUnit.SECONDS;
 
 public abstract class AbstractRequester {
 
+    //todo: set from properties
     final String protocol = "http://";
     final String hostname = "iss.moex.com";
     final String baseEndpoint = "/iss/engines/futures/markets/forts";

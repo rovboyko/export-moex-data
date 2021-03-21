@@ -3,6 +3,7 @@ package ru.moex.importer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
@@ -11,10 +12,11 @@ import java.util.stream.Stream;
 
 public class AppConfig {
 
-    private static Logger log = LoggerFactory.getLogger(AppConfig.class.getName());
+    private static final Logger log = LoggerFactory.getLogger(AppConfig.class.getName());
 
     //General properties
-    public static String PROP_FILE = "config.properties";
+    public static String PROP_FILE = "config";
+    public static String DEFAULT_PROP_FILE = "config.properties";
 
     //Storage properties
     public static String DB_HOST = "db.host";
@@ -25,6 +27,7 @@ public class AppConfig {
     //Requester properties
     public static String MOEX_PROTO = "moex.proto";
     public static String MOEX_HOST = "moex.host";
+    public static String MOEX_FUTURES_ENDPOINT = "futures.endpoint";
     public static String MOEX_TRADES_ENDPOINT = "moex.trades.endpoint";
     public static String MOEX_CANDLES_ENDPOINT = "moex.candles.endpoint";
 
@@ -32,19 +35,21 @@ public class AppConfig {
     public static String SEC_ID = "sec.id";
     public static String FROM_DATE = "from.date";
     public static String TILL_DATE = "till.date";
+    public static String CANDLES_INTERVAL = "candles.interval";
 
-    public Set<String> argProperties = Stream.of(
+    public Set<String> argProperties = Stream.of("--"+PROP_FILE,
             "--"+DB_HOST, "--"+DB_PORT, "--"+DB_USER, "--"+DB_PASS,
             "--"+MOEX_PROTO, "--"+MOEX_HOST,
             "--"+MOEX_TRADES_ENDPOINT, "--"+MOEX_CANDLES_ENDPOINT,
-            "--"+ SEC_ID, "--"+FROM_DATE, "--"+TILL_DATE
+            "--"+SEC_ID, "--"+FROM_DATE, "--"+TILL_DATE,
+            "--"+CANDLES_INTERVAL
             )
             .collect(Collectors.toCollection(HashSet::new));
 
-    Properties properties = new Properties();
+    private final Properties properties = new Properties();
 
     public static AppConfig createFromArgs(String[] args) {
-        var propFilename = getPropFileName(args).orElse(AppConfig.PROP_FILE);
+        var propFilename = getPropFileName(args).orElse(AppConfig.DEFAULT_PROP_FILE);
         var appConfig = createFromFile(propFilename);
         appConfig.addPropertiesFromArgs(args);
         return appConfig;
@@ -59,17 +64,20 @@ public class AppConfig {
 
             AppConfig appConfig = new AppConfig();
 
-            if (input == null) {
-                log.warn("Sorry, unable to find " + filename);
-                return appConfig;
+            if (input != null) {
+                appConfig.properties.load(input);
+            } else {
+                log.debug("Unable to find " + filename + " trying to load it from filesystem");
+                try (InputStream fileInput = new FileInputStream(filename)) {
+                    appConfig.properties.load(fileInput);
+                }
             }
-
-            appConfig.properties.load(input);
-
+            log.info("Config data was successfully uploaded from " + filename);
             return appConfig;
 
         } catch (IOException ex) {
-            throw new RuntimeException("IOException while creating from config file");
+            log.error("IOException while trying to load config from file " + filename);
+            return new AppConfig();
         }
     }
 
@@ -84,7 +92,7 @@ public class AppConfig {
                 properties.put(args[i].replaceFirst("--", ""), args[++i]);
                 log.info("arg = " + args[i]);
             } else {
-                log.info("Unknown property: " + args[i]);
+                log.warn("Unknown property: " + args[i]);
             }
         }
     }

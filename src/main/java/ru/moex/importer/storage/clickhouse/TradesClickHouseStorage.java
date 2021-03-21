@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 public class TradesClickHouseStorage extends AbstractClickHouseStorage<TradesDataElement> {
 
     public static final String TRADES_TABLE = "trades";
-    public static final String TRADES_ID_COLUMN = "TRADENO";
+    public static final String TRADES_ID_COLUMN = "tradeno";
 
     public TradesClickHouseStorage(AppConfig appConfig) {
         super(appConfig);

@@ -9,7 +9,8 @@ import ru.moex.importer.storage.Storage;
 import ru.moex.importer.storage.clickhouse.CandlesClickHouseStorage;
 
 import java.time.LocalDate;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static ru.moex.importer.AppConfig.*;
 import static ru.moex.importer.Util.checkAllNotNull;
@@ -17,7 +18,7 @@ import static ru.moex.importer.Util.checkNotNull;
 
 public class CandlesLoader {
 
-    private static Logger log = LoggerFactory.getLogger(CandlesLoader.class.getName());
+    private static final Logger log = LoggerFactory.getLogger(CandlesLoader.class.getName());
 
     CandlesRequester requester = new CandlesRequester();
     private final String secId;
@@ -43,11 +44,13 @@ public class CandlesLoader {
 
     private void processCandlesData(AppConfig config) {
         final ExecutorService executor = Executors.newFixedThreadPool(4);
+        final String candlesInterval = config.get(CANDLES_INTERVAL);
+
         try (var storage = new CandlesClickHouseStorage(config)) {
             executor.submit(() ->
                 fromDate.datesUntil(tillDate)
                     .parallel()
-                    .forEach(date -> processOneDate(storage, date))
+                    .forEach(date -> processOneDate(storage, date, candlesInterval))
             ).get();
         } catch (Exception e) {
             e.printStackTrace();
@@ -56,8 +59,8 @@ public class CandlesLoader {
         }
     }
 
-    private void processOneDate(Storage<CandlesDataElement> storage, LocalDate date) {
-        var candles = requester.requestCandlesForSecId(secId, date);
+    private void processOneDate(Storage<CandlesDataElement> storage, LocalDate date, String candlesInterval) {
+        var candles = requester.requestCandlesForSecId(secId, date, candlesInterval);
         var candlesData = new CandlesJsonParser(candles, secId).getDataElements();
         storage.batchInsertElements(candlesData);
         log.info(String.format("inserted %s rows for date = %s and secId = %s",
